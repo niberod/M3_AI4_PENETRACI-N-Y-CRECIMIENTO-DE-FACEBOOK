@@ -1,0 +1,96 @@
+---
+title: "Tarea 4 Módulo 3"
+author: "Nicolás Bene"
+date: '2022-03-23'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+suppressPackageStartupMessages(library(tidyverse))
+library(moments)
+
+#Saco notación científica
+options(scipen=999)
+
+```
+
+
+Las tareas que debes realizar son:
+
+1) Carga los datos del fichero en un data frame y calcula “Facebook_por_num” = “porcentaje de usuarios de Facebook sobre el total de población”. Presenta el summary de todas las variables del data frame.
+
+2) Haz un análisis univariante de Internet_por_num y Facebook_por_num separado por año. Calcula y comenta el histograma y estadísticos univariantes (centralización, dispersión, posición, concentración y forma).
+
+3) Haz un gráfico para cada variable (Facebook_por_num y Internet_por_num) donde se pueda visualizar la variación entre 2010 y 2018 del valor medio (o el estadístico que prefieras). Explica qué observas en el gráfico.
+
+4) Haz un análisis bivariante entre Facebook_por_num sobre Internet_por_num:
+      * Gráfico de dispersión separando el año de observación en colores distintos.
+      * Introduce, en el gráfico de dispersión, una recta de regresión (una por año).
+      * Comenta si crees que la relación observada es lineal.
+
+5) Propón alguna transformación sobre las variables del análisis y argumenta cuál es la mejor.
+
+6) Compara, mediante stargazer, los coeficientes de la recta de regresión de Facebook_por_num sobre Internet_por_num en 2010 y 2018. Interpreta el significado de los coeficientes de la regresión en cada año.
+
+7) A partir de los datos del punto anterior, comenta de qué forma beneficia a Facebook el hecho que, en 2018, el coeficiente de Internet_por_num sea muy superior al observado en el año 2010.
+
+# 1)  Carga los datos del fichero en un data frame y calcula “Facebook_por_num” = “porcentaje de usuarios de Facebook sobre el total de población”. Presenta el summary de todas las variables del data frame.
+
+
+```{r carga de datos y análisis del conjunto de datos, message=FALSE}
+
+#Creo la URL para bajar los datos. Lo hago así para que sea más fácilmente visible en 
+#el PDF, además esto permitiría automatización en caso de que fuera necesario cargar más
+#archivos desde github. De hecho este mismo script (cambiando el nombre
+# del archivo) lo usé en la tarea anterior
+urlRemote  <- "https://raw.githubusercontent.com/"
+pathGithub <- "griu/mbdds_fc20/master/gestion_datos/www/"
+fileName   <- "fb_long.csv"
+
+#Cargo los datos a un data frame
+df <- read_csv2(
+            paste0(urlRemote, pathGithub, fileName),
+            locale = locale(
+                            decimal_mark = ",", 
+                            grouping_mark = "."
+                        )
+      )
+
+#Analizo las primeras observaciones
+df %>% 
+      head()
+
+```
+
+Se observa que en este caso la variable "Internet_por_num" es un porcentaje de 0 a 100 (el 20% aparece como 20 y no como 0.2), por lo que al crear la variable Facebook_por_num se multiplica por 100 para que esté en las mismas unidades de medida que Internet_por_num. Por otra parte la población no está en miles, sino que está en cantidad de habitantes. En este sentido en Argentina por ejemplo figuran aproximadamente 40 millones de habitantes para el 2010, que es lo que se menciona en Wikipedia que tenía en el censo realizado ese año (<https://es.wikipedia.org/wiki/Argentina>). Por lo tanto no es necesario realizar más transformaciones que las ya señaladas. 
+
+A continuación se crea la variable y se realiza el summary.
+
+```{r creo Facebook_por_num y hago el summary}
+
+#Creo variable
+df <- df %>% 
+            mutate(
+
+                  Facebook_por_num = Facebook_num*100/poblacion_num
+            )
+
+df %>% 
+      summary
+
+```
+En el summary se observa que existe una única variable de *string* que es "pais_r", el resto son numéricas.
+En el caso de Facebook_num se tiene un máximo de 300 millones que llama la atención, pero el mismo ya se analizó en otra tarea que corresponde a India que tiene una población d emás de 1300 millones. 
+Por otro lado Internet_por_num contiene un NA, y sus valores están dentro de 0 a 100 como sucede en un porcentaje (que es sibre la población). 
+
+Población_num tiene valores coherentes con las poblaciones de los países, que pueden ir desde 300 mil en países como Islandia a más de 1300 millones como sucede en India y China (ver <https://es.wikipedia.org/wiki/Anexo:Pa%C3%ADses_y_territorios_dependientes_por_poblaci%C3%B3n>).
+
+La variable anyo cuenta con solo dos valores: 2010 y 2018. La misma no presenta NAs.
+
+Por último queda la variable recién creada. Como las variables a partir de las cuales fue construida no presentan NAs, Facebook_por_num tampoco tiene NAs.Al igual que como sucedía con Internet_por_num, no presenta valores por debajo de 0 ni por encima de 100, como tiene que suceder en un porcentaje calculado de la forma solicitada. Se observa que la media y la mediana son similares, por lo que probablemente se trate de una distribución que no presenta mucha asimetría. Esta variable adquiere valores desde porcentajes tan bajos como 0.00893 hasta tan elevados como el 90,33%.
+
+
+## 2) Haz un análisis univariante de Internet_por_num y Facebook_por_num separado por año. Calcula y comenta el histograma y estadísticos univariantes (centralización, dispersión, posición, concentración y forma).
+
+

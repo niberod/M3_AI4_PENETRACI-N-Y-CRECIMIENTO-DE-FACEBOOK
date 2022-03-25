@@ -91,6 +91,192 @@ La variable anyo cuenta con solo dos valores: 2010 y 2018. La misma no presenta 
 Por último queda la variable recién creada. Como las variables a partir de las cuales fue construida no presentan NAs, Facebook_por_num tampoco tiene NAs.Al igual que como sucedía con Internet_por_num, no presenta valores por debajo de 0 ni por encima de 100, como tiene que suceder en un porcentaje calculado de la forma solicitada. Se observa que la media y la mediana son similares, por lo que probablemente se trate de una distribución que no presenta mucha asimetría. Esta variable adquiere valores desde porcentajes tan bajos como 0.00893 hasta tan elevados como el 90,33%.
 
 
-## 2) Haz un análisis univariante de Internet_por_num y Facebook_por_num separado por año. Calcula y comenta el histograma y estadísticos univariantes (centralización, dispersión, posición, concentración y forma).
+# 2) Haz un análisis univariante de Internet_por_num y Facebook_por_num separado por año. Calcula y comenta el histograma y estadísticos univariantes (centralización, dispersión, posición, concentración y forma).
+
+Tanto Internet_por_num y Facebook_por_num son variables cuantitativas continuas, ya que entre dos porcentajes pueden haber infinitos valores (en el summary se observa que las variables no están redondeadas). Para este tipo de variables es útil ver el histograma para apreciar visualmente su distribución. Para ello es necesario fijar la cantidad de *bins* o intervalos en que se agruparán los valores, lo cual realizo utilizando Sturges.
+
+## 2.1 ) Internet_por_num
+
+Primero analizo la variable Internet_por_num. A continuación se muestra el histograma. Se usaron la misma cantidad de intervalos en ambos años para poder comparar mejor los cambios en la distribución.
+
+```{r histograma variables}
+df %>%
+            ggplot(aes(Internet_por_num,fill= as.factor(anyo)))+
+            geom_histogram(bins = nclass.Sturges(df$Internet_por_num))+
+            xlab("% de población que usa Internet")+
+            ylab("Frecuencia absoluta del intervalo")+
+            facet_grid(~as.factor(anyo))+
+            theme(legend.position = "None")+
+        geom_text(
+            aes(label =stat(count)), 
+                stat = 'bin', vjust = -0.5, bins=9
+            )+
+      scale_y_continuous(limits = c(0,25),breaks = seq(0,25, by =5))
+            
+```
+Se observa que en 2010 está variable parece más simétrica que en el 2018. En este último año hay una mayor concentración de países con más % de población que usa internet. Probablemente entre estos dos años puede haber aumentado la conectividad, instalaciones e infraestructura para el acceso, además de la extensión del uso de internet por medio del móvil. También podrían darse otras causas, como mejoras económicas en ciertos países. 
+
+En el 2018 hay un intervalo modal claramente definido en uno de los tramos superiores. En el 2010, si bien hay un intervalo modal, los dos intervalos que lo siguen en frecuencias no presentan diferencias significativas en las mismas con respecto al intervalo modal. Eso sí, esos dos intervalos son de valores de la variable Internet_por más bajos, con lo que se ve que esta variable está más dispersa en el 2010 que en el 2018.
+
+Todas estas observaciones deben ser luego examinadas cuando se calculen las métricas.
 
 
+```{r}
+df %>% 
+      group_by(anyo) %>% 
+      summarise(
+            media=mean(Internet_por_num, na.rm = T),
+           sd=sd(Internet_por_num, na.rm = T),
+           CV=sd(Internet_por_num, na.rm = T)/mean(Internet_por_num, na.rm = T),
+           asimetria=skewness(Internet_por_num, na.rm = T),
+           apuntamiento=kurtosis(Internet_por_num, na.rm = T),
+           minimo=min(Internet_por_num, na.rm = T),
+           Q25=quantile(Internet_por_num,0.25, na.rm = T),
+           mediana=median(Internet_por_num, na.rm = T),
+           Q75=quantile(Internet_por_num,0.75, na.rm = T),
+           maximo=max(Internet_por_num, na.rm = T)
+       ) %>% 
+      pivot_longer(
+            cols = -anyo,names_to = "metrica", values_to = "valor"
+      ) %>% 
+      pivot_wider(
+                  names_from = anyo,
+                  values_from = valor
+       )
+
+
+
+
+```
+
+En el 2010, en promedio, el 48,2% de la población de los países seleccionados usaban internet. Este porcentaje medio aumentó a 73,2% en 2018.
+
+La desviación típica fue de 27,2 puntos porcentuales en 2010 y de 20,5 en 2018.
+
+El coeficiente de variación fue de 56,5% en 2010, lo cual está por debajo del 80%, por lo tanto la media es representativa del conjunto de datos, el cuál puede decirse que es homogéneo. Este porcentaje es aún menor en el 2018, por lo que en este año hay menor dispersión con respecto a la media que en el 2010, y tienen una mayor concentración, lo cuál se puede ver en el gráfico anterior. 
+
+Si bien el coeficiente de asimetría es negativo en 2010 (-0,08), el mismo está muy cercano a 0, lo cuál implica que tiene cierta simetría. En el 2018 la distribución no presenta tanta simetría, y el coeficiente es menor (-0,81), lo que implica que hay una asimetría negativa, con lo cual hay una cola hacia la izquierda y hay más concentración a la derecha, que es lo que sucede en el gráfico anterior.
+
+Se observa que el apuntamiento o curtosis es positivo en ambos años, por lo que ambas distribuciones son leptocúrticas, con una mayor concentración en los valores centrales.
+
+El mínimo porcentaje de 2010 es bastante menor al del 2018, siendo 0,78% y 18,6% respectivamente. En el máximo también se produce un crecimiento aunque menor: es de 93,4% en 2010 y de 99,6% en 2018. Este mayor crecimiento en el mínimo podría deberse a que hubo una mejora en las tecnologías en los países con mayor atraso teconológico, que son los que tienen más margen para seguir mejorando, ya que los países más desarrollados económicamente tienen una cobertura de internet mayor y tienen poco margen para aumentarla. De todas maneras esto requeriría un análisis más profundo, como por ejemplo analizar si los incrementos en la cobertura logrados por mejoras tecnológicas son decrecientes. Entiendo que dicho análisis excede a la presente tarea.
+
+Todos los cuartiles aumentan de 2010 a 2018. El primer cuartil aumenta más del doble, más específicamente tiene un crecimiento del 135,4%. La mediana crece un 75,3% y el tercer cuartil un 23,9%. Parecería que, como ya fuera mencionado, hay rendimientos marginales decrecientes. Es decir a mayor cobertura, la misma se puede seguir incrementando pero a ritmos menores.
+
+Cabe destacar que en ambos años la mediana no difiere tanto de la mediana. Los datos de los cuartiles se analizarán con mayor detalle cuando se examine el boxplot más adelante.
+
+
+## 2.2) Facebook_por_num
+
+En el siguiente gráfico se expone un histograma por año de la variable Facebook_por_num, creando *bins* en nuevamente mediante Sturges.
+
+```{r histograma variablee}
+df %>%
+            ggplot(aes(Facebook_por_num,fill= as.factor(anyo)))+
+            geom_histogram(bins = nclass.Sturges(df$Facebook_por_num))+
+            xlab("% de población que usa Facebook")+
+            ylab("Frecuencia absoluta del intervalo")+
+            facet_grid(~as.factor(anyo))+
+            theme(legend.position = "None")+
+        geom_text(
+            aes(label =stat(count)), 
+                stat = 'bin', vjust = -0.5, bins=9
+            )+
+      scale_y_continuous(limits = c(0,25),breaks = seq(0,25, by =5))
+            
+```
+En el caso del % de población que usa Facebook, se observa que en el 2010 hay una mayor concentración en los intervalos por debajo del 50%, siendo el intervalo modal el que contiene a los valores más bajos. En el 2018, en cambio, se empieza a dar una concentración en los valores medios y más altos de la variable Facebook_por_num. Esto quiere decir que aumentó el uso de esta red social en los países entre estos dos años. Esto podría tener cierta relación con la expansión de los usuarios de internet analizada anteriormente. De todas formas esto último será estudiado al realizar el análisis bivariado de estas dos variables.
+
+
+A continuación se exponen las medidas de centralización, dispersión, posición, concentración y forma.
+
+
+```{r métricas Facebook_por_num}
+df %>% 
+      group_by(anyo) %>% 
+      summarise(
+            media=mean(Facebook_por_num, na.rm = T),
+           sd=sd(Facebook_por_num, na.rm = T),
+           CV=sd(Facebook_por_num, na.rm = T)/mean(Facebook_por_num, na.rm = T),
+           asimetria=skewness(Facebook_por_num, na.rm = T),
+           apuntamiento=kurtosis(Facebook_por_num, na.rm = T),
+           minimo=min(Facebook_por_num, na.rm = T),
+           Q25=quantile(Facebook_por_num,0.25, na.rm = T),
+           mediana=median(Facebook_por_num, na.rm = T),
+           Q75=quantile(Facebook_por_num,0.75, na.rm = T),
+           maximo=max(Facebook_por_num, na.rm = T)
+       ) %>% 
+      pivot_longer(
+            cols = -anyo,names_to = "metrica", values_to = "valor"
+      ) %>% 
+      pivot_wider(
+                  names_from = anyo,
+                  values_from = valor
+       )
+
+
+
+
+```
+
+
+La media aritmética de la variable Facebook_por_num es del 19,3% en 2010 y de 48,9% en 2018. Se nota un cambio significativo en el promedio de población usuaria de esta red social. 
+
+La desviación estándar es de 16,7 puntos porcentuales en 2010 y de 21,1 en 2018. Si bien el desvío estándar aumenta, hay que tener en cuenta que la media también aumentó. Es más la media aumentó más de lo que aumentó la desviación estándar, por lo tanto para analizar mejor que pasó con la dispersión con respecto a la media es mejor examinar el coeficiente de variación. Al analizar este coeficiente se observa que el mismo desciende, pasa de ser 86,6% en 2010 a 43,2% en 2018. Es decir que en 2010 el conjunto de datos era heterogéneo, mientras que en 2018 es homogéneo y la media es representativa del conjunto de datos. Esto puede visualizarse en el gráfico, en donde los valores están concentrados principalmente en tres intervalos.
+
+La asimetría cambia completamente de un año a otro. En el 2010 la asimetría es positiva, observándose una mayor concentración de valores a la izquierda de la distribución, y en el 2018 es negativa, con mayor concentración al lado derecho y con cola a la izquierda.
+
+En el caso de Facebook, hay mínimos significativamente más bajos que en el caso de el porcentaje de usuarios de internet. Puede suceder que no sea tan lineal la expansión en el uso de internet con el crecimiento de usuarios de Facebook, pero eso se examinará al hacer el análisis bivariado. El porcentaje máximo es de 83,4% para el 2010, y de 90,3% para el 2018.
+
+En el 2010, el 50% de los países analizados tenían menos del 17,2% de la población usando Facebook. En el 2018 en el 50% de los países había más del 53,3% de la población usando esta red social.
+
+Los otros dos cuartiles también incrementaron entre los dos años en estudio. El primer cuartil pasó del 3,3% a 42,2%. Rl tercer cuartil era 29% en 2010 y creció a 63,3% en 2018.
+
+Claramente entre un año y otro aumentó la proporción de personas que acceden a esta red social.
+
+
+
+# 3) Haz un gráfico para cada variable (Facebook_por_num y Internet_por_num) donde se pueda visualizar la variación entre 2010 y 2018 del valor medio (o el estadístico que prefieras). Explica qué observas en el gráfico.
+
+La variación del estadístico que me interesa son los cuartiles (el primero, el segundo o mediana y el tercero). Para analizar esta variación realizaré un boxplot de ambos años para cada variable.
+
+## 3.1 ) Internet_por_num
+
+```{r boxplot Internet_por_num}
+
+df %>% 
+      ggplot(aes(x=Internet_por_num,y=anyo,group=anyo,fill=as.factor(anyo)))+
+      geom_boxplot()+
+      ggtitle(
+      "Boxplot de % de población usuaria de internet por año \n de países seleccionados")+
+      xlab("% de población usuaria de internet")+
+      ylab("Año")+
+      scale_y_continuous(breaks=c(2010,2018))+
+      theme(legend.position = "none")
+
+```
+
+Tal como fuera dicho en el análisis univariante, todos los cuartiles aumentan entre 2010 y 2018. La mediana pasó de ser 45% a 78,9%. Además se observa que la caja disminuye en 2018, lo que implica que hay una mayor concentración de los porcentajes en este año.También puede visualizarse que la distribución está más concentrada a la derecha en 2018, y que en el 2010 hay una mayor simetría. Esto ya fue mencionado en el análisis de las métricas de esta variable.
+
+Cabe destacar que en ninguno de los dos años se observan outliers, ya que no hay puntos ni a la izquierda ni a la derecha de los bigotes.
+
+## 3.2 ) Facebook_por_num
+
+```{r boxplot Facebook_por_num}
+
+df %>% 
+      ggplot(aes(x=Facebook_por_num,y=anyo,group=anyo,fill=as.factor(anyo)))+
+      geom_boxplot()+
+      ggtitle(
+      "Boxplot de % de población usuaria de Facebook por año \n de países seleccionados")+
+      xlab("% de población usuaria de Facebook")+
+      ylab("Año")+
+      scale_y_continuous(breaks=c(2010,2018))+
+      theme(legend.position = "none")
+
+```
+En este caso también se produce entre 2010 y 2018 un incremento de los tres cuartiles. La mediana pasa de 17,2% a 53,3%, es decir que aumenta el triple en el período en estudio. 
+
+Por otra parte se observa que en el 2010 hay una concentración de los valores a la izquierda de la distribución, mientras que en el 2018 ocurre lo contrario. Esto ya se vió al analizar el coeficiente de asimetría.
+
+Por último, se puede mencionar que en ambos años se observan outliers. En 2010 había uno solo y estaba por encima del tercer cuartil más 1,5 veces el rango intercuartílico (IQR). en el 2018 hay más outliers, pero a diferencia del 2010 estos están por debajo del primer cuartil menos 1,5 veces el IQR. 

@@ -8,7 +8,9 @@ output: pdf_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(cowplot))
 library(moments)
+
 
 #Saco notación científica
 options(scipen=999)
@@ -279,4 +281,231 @@ En este caso también se produce entre 2010 y 2018 un incremento de los tres cua
 
 Por otra parte se observa que en el 2010 hay una concentración de los valores a la izquierda de la distribución, mientras que en el 2018 ocurre lo contrario. Esto ya se vió al analizar el coeficiente de asimetría.
 
-Por último, se puede mencionar que en ambos años se observan outliers. En 2010 había uno solo y estaba por encima del tercer cuartil más 1,5 veces el rango intercuartílico (IQR). en el 2018 hay más outliers, pero a diferencia del 2010 estos están por debajo del primer cuartil menos 1,5 veces el IQR. 
+Por último, se puede mencionar que en ambos años se observan outliers. En 2010 había uno solo y estaba por encima del tercer cuartil más 1,5 veces el rango intercuartílico (IQR). en el 2018 hay más outliers, pero a diferencia del 2010 estos están por debajo del primer cuartil menos 1,5 veces el IQR.
+
+
+##4) Haz un análisis bivariante entre Facebook_por_num sobre Internet_por_num:
+      * Gráfico de dispersión separando el año de observación en colores distintos.
+      * Introduce, en el gráfico de dispersión, una recta de regresión (una por año).
+      * Comenta si crees que la relación observada es lineal.
+
+En el gráfico se pone como variable dependiente (y) a Facebook_por_num y como independiente (x) a Internet_por_num. Esto se hace así en virtud de que, a priori, parecería razonable analizar la hipótesis de que a mayor cantidad de usuarios de internet en un país, es más probable que haya más usuarios de Facebook. De todas maneras hay que estudiarlo, ya que puede suceder que no sea tan lineal, puede pasar que haya países en que esta red social no sea popular pero se use mucho internet, y además puede ocurrir que en los países desarrollados no haya mucho crecimiento de los usuarios de internet, pero sin embargo se expanda el uso de Facebook. Este último aspecto se vió en el análisis univariado.
+
+Viendo el gráfico de dispersión, y por medio de un análisis de regresión se puede analizar esta relación. A continuación se expone dicho gráfico conjuntamente con una línea de regresión para cada año, y también se analiza una recta de regresión local (LOESS) para ver cuánto se aleja.
+
+```{r gráfico de dispersión y recta de regresión}
+
+graf_disp_1 <- df %>% 
+      ggplot(aes(x=Internet_por_num, y=Facebook_por_num,group= as.factor(anyo), color=as.factor(anyo)))+
+      geom_point()+
+      geom_smooth(method='lm', se=FALSE)+
+      guides(col=guide_legend("Año"))+
+      xlab("% de población usuaria de internet")+
+      ylab("% de población usuaria de Facebook")
+
+graf_disp_1
+
+```
+
+Analizando el gráfico se observa en general que a mayor porcentaje de usuarios de internet, mayor cantidad de usuarios de Facebook, pero también se puede apreciar que a medida que aumenta el porcentaje de poblción con internet, la distancia con respecto a la recta de regresión lineal parecería ser mayor. Podría existir heterocedasticidad, es decir que los errores no son constantes en las observaciones analizadas. Esto debería ser examinado en profundidad, pero entiendo que excede el análisis de la presente tarea.
+
+Una forma de examinar si la relación es o no lineal es comparando la regresión lineal antes expuesta con una regresión local (LOESS), lo cual se hace a continuación, diferenciando por año.
+
+```{r lm y loess}
+graf_disp_2 <- df %>% 
+                  ggplot(aes(x=Internet_por_num, y=Facebook_por_num))+
+                  geom_point()+
+                  geom_smooth(method='lm', se=FALSE,aes(color = "lm"))+
+                  geom_smooth(method='loess', se=FALSE, aes(color = "loess"))+
+                  guides(col=guide_legend("Modelo"))+
+                  xlab("% de población usuaria de internet")+
+                  ylab("% de población \n  usuaria de Facebook")+
+                  facet_grid(~anyo)
+
+
+graf_disp_2 
+
+
+```
+Se observa que en el año 2010 la recta de regresión local no se aleja tanto de la lineal, en el 2018 se aleja un poco más pero no parecería ser tan significativo. La relación a priori parece lineal, el problema es el comentado anteriormente que los residuos parecerían crecer a medida que aumenta el porcentaje de población con internet. 
+
+## 5) Propón alguna transformación sobre las variables del análisis y argumenta cuál es la mejor.
+
+Se realizan dos transformaciones: por un lado se hace solo el logaritmo de la variable Facebook_por_num, y por otro lado se hace la raíz cuadrada de ambas variables. Al ser las dos variables estrictamente positivas, es posible realizar dichas transformaciones.
+
+```{r transformación variables}
+df <- df %>% 
+            mutate(
+                  log_Facebook =log(Facebook_por_num),
+                  raiz_Internet = sqrt(Internet_por_num),
+                  raiz_Facebook = sqrt(Facebook_por_num)
+                        )
+
+
+```
+
+Ahora realizo el gráfico de dispersión por año con modelos lm y LOESS para cada una de estas dos transformaciones, a efectos de compararlos con el gráfico visto con las variables antes de transformarlas.
+
+
+```{r lm y loess en log de variables}
+graf_disp_2 <- graf_disp_2 +
+                        ggtitle("Sin transformación de variables")
+
+
+
+graf_disp_3 <- df %>% 
+                        ggplot(aes(x= Internet_por_num, y= log_Facebook))+
+                        geom_point()+
+                        geom_smooth(method='lm', se=FALSE,aes(color = "lm"))+
+                        geom_smooth(method='loess', se=FALSE, aes(color = "loess"))+
+                        guides(col=guide_legend("Modelo"))+
+                        xlab("% de población usuaria de internet")+
+                        ylab("Log % de población \n usuaria de Facebook")+
+                        facet_grid(~anyo)+
+                        ggtitle("Con logaritmo de Facebook")
+
+
+
+graf_disp_4 <- df %>% 
+                        ggplot(aes(x= raiz_Internet, y= raiz_Facebook))+
+                        geom_point()+
+                        geom_smooth(method='lm', se=FALSE,aes(color = "lm"))+
+                        geom_smooth(method='loess', se=FALSE, aes(color = "loess"))+
+                        guides(col=guide_legend("Modelo"))+
+                        xlab("raíz de % de población  usuaria de internet")+
+                        ylab("raíz de % de población \n usuaria de Facebook")+
+                        facet_grid(~anyo)+
+                        ggtitle("Con raíz de ambas variables")
+
+
+
+
+```
+
+A continuación comparo el gráfico hecho anteriormente con cada una de las transformaciones.
+
+## 5.1) Logaritmo de Facebook_por_num
+
+
+```{r gráfico comparación con logaritmo, fig.width = 7 , fig.height = 4}
+plot_grid( graf_disp_2,graf_disp_3, ncol = 1)
+```
+Se observa que en el caso del año 2010, con la transformación logarítimica mencionada, no parece haber mejorado demasiado. La dispersión de los puntos con respecto a la recta de regresión no presenta cambios significativos, y además la regresión local se aparta más de la línea que en el caso del mdelo LOESS sobra las variables sin transformar.
+
+En el año 2018 con la transformación parece haber disminuido la dispersión de los puntos con respecto a la recta de regresión. La recta de LOESS, de todas formas, no parece haber sufrido una gran modificación.
+
+De cualquier manera, en el siguiente ejercicio se analizarán los coeficientes de determinación (R cuadrado) de las regresiones lineales a efectos de confirmar si hay una mejora o no con la transformación.
+
+## 5.2) Raíces de ambas variables
+
+```{r gráfico comparación con raíces, fig.width = 7 , fig.height = 4}
+plot_grid( graf_disp_2,graf_disp_4, ncol = 1 )
+```
+Se observa que en el año 2010 la situación es muy similar a lo que sucedía con la transformación logarítimica expuesta. en el 2018, en cambio, parece disminuir la dispersión de los valores más elevados de la población usuaria de internet, aunque no tanto como en el caso del logaritmo. La regresión local en ciertos tramos se aparta dmás de la recta de regresión lineal que en el caso de las variables sin transformación.
+
+Del análisis de las transformaciones, pareceria que las mismas no mejoran lo que sucede con la regresión lineal de las variables sin transformar. De cualquier manera, esto se analizará con mayor detalle en el ejercicio siguiente.
+
+## 6) Compara, mediante stargazer, los coeficientes de la recta de regresión de Facebook_por_num sobre Internet_por_num en 2010 y 2018. Interpreta el significado de los coeficientes de la regresión en cada año.
+
+Realizo entonces un modelo de regresión lineal por año. Primero analizo los coeficientes de la regresión sin las transformaciones vistas anteriormente.
+
+```{r modelos de regresión por año}
+
+#regresión lineal simple sin transformaciones - 2010
+lm_2010 <- lm(Facebook_por_num ~ Internet_por_num, 
+              data = df %>%
+                           filter(anyo==2010)
+                    )
+#regresión lineal simple sin transformaciones - 2018    
+lm_2018 <- lm(Facebook_por_num ~ Internet_por_num, 
+              data = df %>%
+                           filter(anyo==2018)
+                    )
+
+#Comparo los modelos de cada año   
+stargazer(lm_2010, lm_2018,
+          type="text",
+          column.labels =
+                  c("Sin transf. 2010", 
+                    "Sin transf. 2018"))
+      
+```
+Se observa que en ambos años la variable dependiente es estadísticamente significativa con un nivel de significación del 1%. 
+El beta uno en 2010 es de 0,439, lo que implica que, en promedio, un aumento (descenso) de 1 punto porcentual en la población con internet, se incrementaría (reduciría) en 0,439 puntos porcentuales el porcentaje de usuarios de Facebook. En el año 2018 este beta es mayor (0,72), por lo que que, en promedio, un incremento del porcentaje de usuarios de internet en dicho año, se correspondería con un mayor aumento de los usuarios de Facebook que en el año 2010.
+
+Al analizarse el coeficiente de determinación (R cuadrado), la variable Internet_por_num explica un 50,8% de la varianza del porcentaje de usuarios de Facebook en la población. Este coeficiente desciende levemente en 2018 a 48,9%, por lo que en este último año el modelo explica menor porcentaje de la variabilidad de la variable dependiente. De todas maneras no es una diferencia tan significativa.
+
+Además, el error típico de los residuos es mayor en el 2018 (15,2) que en el caso de 2010 (11,8), por lo tanto en 2018 el ajuste de la recta es peor que en el 2010. Esto se había observado en parte en el análisis gráfico, donde se había constatado que la regresión local se apartaba más de la recta de regresión lineal en el 2018 que en el 2010.
+
+A continuación se comparan brevemente los coeficientes de los modelos con transformación para cada año. 
+
+```{r modelos de regresión con transformaciones}
+   
+#regresión lineal simple con logaritmo de Facebook - 2010
+lm_log_2010 <- lm(log_Facebook ~ Internet_por_num, 
+                  data = df %>%
+                           filter(anyo==2010)
+                    )
+
+#regresión lineal simple con logaritmo de Facebook - 2018
+lm_log_2018 <- lm(log_Facebook ~ Internet_por_num, 
+                  data = df %>%
+                           filter(anyo==2018)
+                    )
+
+#regresión lineal simple con raíces ambas variables - 2010
+lm_raiz_2010 <- lm(raiz_Facebook ~ raiz_Internet, 
+              data = df %>%
+                           filter(anyo==2010)
+                    )
+
+      
+#regresión lineal simple con raíces ambas variables - 2018
+lm_raiz_2018 <- lm(raiz_Facebook ~ raiz_Internet, 
+              data = df %>%
+                           filter(anyo==2018)
+                    )
+
+```
+
+Comparo primero para 2010.
+
+```{r comparación modelos 2010}
+
+#Comparo los modelos de 2010
+stargazer(lm_2010, lm_log_2010,lm_raiz_2010,
+          type="text",
+          column.labels =
+                  c("Sin transf. 2010", 
+                    "Log de Facebook 2010",
+                    "Raíz ambas 2010"
+                    )
+          )
+
+```
+
+Se observa que el coeficiente de determinación empeora con la transformación logarítimica (pasa de 50,8% sin transformación a 46%), pero sin embargo mejora levemente con la raíz, ascendiendo a un 57,3%. De todas maneras no es una mejora significativa.
+Por otra parte el error típico de los residuos disminuye con las dos transformaciones, siendo menor en la transformación logarítmica de la variable Facebook_por_num.
+
+Resta entonces analizar que sucede en el 2018.
+
+```{r comparación modelos 2018}
+
+#Comparo los modelos de 2010
+stargazer(lm_2018, lm_log_2018,lm_raiz_2018,
+          type="text",
+          column.labels =
+                  c("Sin transf. 2018", 
+                    "Log de Facebook 2018",
+                    "Raíz ambas 2018"
+                    )
+          )
+
+```
+Con ambas transformaciones el coeficiente de determinación desciende, resultando significativo el decrecimiento con el logaritmo, ya que pasa de 48,9% a 31,4% con dicha transformación. Con las raíces el descenso es leve.
+
+Con la comparación de modelos vista en este ejercicio, se confirma lo visto en el ejercicio anterior de que las transformaciones no mejoran significativamente el ajuste con respecto a la recta de regresión lineal, ya que el coeficiente de determinación mejora levemente solo con un modelo en un año, y en el resto de modelos y años incluso desciende.
+
+# 7) A partir de los datos del punto anterior, comenta de qué forma beneficia a Facebook el hecho que, en 2018, el coeficiente de Internet_por_num sea muy superior al observado en el año 2010.
+
+Ya se vió en el  punto anterior que el beta uno, que es la pendiente de la recta, es mayor en el 2018 ( 0,72) que en el 2010 (0.44). Esto beneficia a Facebook ya que, como fuera mencionado, el incremento de un punto porcentual en el porcentaje de usuarios de internet implicaría que, en promedio, aumentaría 0,72 puntos el porcentaje de usuarios de Facebook. En 2010 dicho incremento era menor. Por lo tanto en el 2018 tendría un mayor crecimiento si crece la penetración del uso de internet en los diferentes países.  

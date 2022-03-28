@@ -1,15 +1,18 @@
 ---
 title: "Tarea 4 Módulo 3"
 author: "Nicolás Bene"
-date: '2022-03-23'
 output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
+
 knitr::opts_chunk$set(echo = TRUE)
+
+#Cargo las librerías
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(cowplot))
 library(moments)
+library(stargazer)
 
 
 #Saco notación científica
@@ -24,7 +27,7 @@ Las tareas que debes realizar son:
 
 2) Haz un análisis univariante de Internet_por_num y Facebook_por_num separado por año. Calcula y comenta el histograma y estadísticos univariantes (centralización, dispersión, posición, concentración y forma).
 
-3) Haz un gráfico para cada variable (Facebook_por_num y Internet_por_num) donde se pueda visualizar la variación entre 2010 y 2018 del valor medio (o el estadístico que prefieras). Explica qué observas en el gráfico.
+3) Haz un gráfico para cada variable (Facebook_por_num e Internet_por_num) donde se pueda visualizar la variación entre 2010 y 2018 del valor medio (o el estadístico que prefieras). Explica qué observas en el gráfico.
 
 4) Haz un análisis bivariante entre Facebook_por_num sobre Internet_por_num:
       * Gráfico de dispersión separando el año de observación en colores distintos.
@@ -65,7 +68,7 @@ df %>%
 
 ```
 
-Se observa que en este caso la variable "Internet_por_num" es un porcentaje de 0 a 100 (el 20% aparece como 20 y no como 0.2), por lo que al crear la variable Facebook_por_num se multiplica por 100 para que esté en las mismas unidades de medida que Internet_por_num. Por otra parte la población no está en miles, sino que está en cantidad de habitantes. En este sentido en Argentina por ejemplo figuran aproximadamente 40 millones de habitantes para el 2010, que es lo que se menciona en Wikipedia que tenía en el censo realizado ese año (<https://es.wikipedia.org/wiki/Argentina>). Por lo tanto no es necesario realizar más transformaciones que las ya señaladas. 
+Se observa que en este caso la variable "Internet_por_num" es un porcentaje de 0 a 100 (el 20% aparece como 20 y no como 0.2), por lo que al crear la variable Facebook_por_num se multiplica por 100 para que esté en las mismas unidades de medida que Internet_por_num. Por otra parte, la población no está en miles sino que está en cantidad de habitantes sin ningún tipo de transformación. En este sentido en Argentina por ejemplo figuran aproximadamente 40 millones de habitantes para el 2010, que es lo que se menciona en Wikipedia que tenía en el censo realizado ese año (<https://es.wikipedia.org/wiki/Argentina>). Por lo tanto no es necesario realizar más transformaciones que las ya señaladas. 
 
 A continuación se crea la variable y se realiza el summary.
 
@@ -83,51 +86,70 @@ df %>%
 
 ```
 En el summary se observa que existe una única variable de *string* que es "pais_r", el resto son numéricas.
-En el caso de Facebook_num se tiene un máximo de 300 millones que llama la atención, pero el mismo ya se analizó en otra tarea que corresponde a India que tiene una población d emás de 1300 millones. 
-Por otro lado Internet_por_num contiene un NA, y sus valores están dentro de 0 a 100 como sucede en un porcentaje (que es sibre la población). 
 
-Población_num tiene valores coherentes con las poblaciones de los países, que pueden ir desde 300 mil en países como Islandia a más de 1300 millones como sucede en India y China (ver <https://es.wikipedia.org/wiki/Anexo:Pa%C3%ADses_y_territorios_dependientes_por_poblaci%C3%B3n>).
+En el caso de Facebook_num se tiene un máximo de 300 millones que llama la atención, pero el mismo ya se analizó en otra tarea y se vió que corresponde a India, país que tiene una población de más de 1300 millones de personas.
+
+Por otro lado los valores de Internet_por_num están dentro de 0 a 100 como debe suceder en un porcentaje que se calcula sobre una población, ya que los usuarios de Facebook deben ser siempre menores o iguales a la población total.
+Esta variable contiene un NA, a continuación se analiza el mismo.
+
+```{r analizo NA de internet_por_num}
+df %>% 
+      filter(is.na(Internet_por_num))
+
+```
+
+El NA pertenece a Taiwán y solo para el año 2010. A los efectos de la presente tarea y con el fin de no perder datos, no se remueven los datos de los que sí se dispone de Taiwán (tiene datos del resto de variables para ambos años e incluso de Internet_por_num para el 2018). Cuando se calculen las diferentes métricas de Internet_por_num se usará el argumento *na.rm = T* para que no se considere este NA. En el análisis bivariado y en los modelos, R automáticamente exlcuye este NA. Cabe destacar que también sería válido remover a Taiwán (ambos años y todas las variables) del análisis. 
+
+La variable Población_num tiene valores coherentes con las poblaciones de los países, que pueden ir desde 300 mil en países como Islandia a más de 1300 millones como sucede en India y China (ver <https://es.wikipedia.org/wiki/Anexo:Pa%C3%ADses_y_territorios_dependientes_por_poblaci%C3%B3n>).
 
 La variable anyo cuenta con solo dos valores: 2010 y 2018. La misma no presenta NAs.
 
-Por último queda la variable recién creada. Como las variables a partir de las cuales fue construida no presentan NAs, Facebook_por_num tampoco tiene NAs.Al igual que como sucedía con Internet_por_num, no presenta valores por debajo de 0 ni por encima de 100, como tiene que suceder en un porcentaje calculado de la forma solicitada. Se observa que la media y la mediana son similares, por lo que probablemente se trate de una distribución que no presenta mucha asimetría. Esta variable adquiere valores desde porcentajes tan bajos como 0.00893 hasta tan elevados como el 90,33%.
+Por último queda la variable recién creada. Como las variables a partir de las cuales fue construida no presentan NAs, Facebook_por_num tampoco tiene NAs. Al igual que como sucedía con Internet_por_num, no presenta valores por debajo de 0 ni por encima de 100, como tiene que suceder en un porcentaje calculado de la forma solicitada. Se observa que la media y la mediana son similares. Esta variable adquiere valores desde porcentajes tan bajos como 0.00893% hasta tan elevados como el 90,33%. De todas maneras es más conveniente analizar estas métricas por año, de forma de ver mejor la evolución de esta variable, lo cual se hará en el siguiente ejercicio.
 
 
 # 2) Haz un análisis univariante de Internet_por_num y Facebook_por_num separado por año. Calcula y comenta el histograma y estadísticos univariantes (centralización, dispersión, posición, concentración y forma).
 
 Tanto Internet_por_num y Facebook_por_num son variables cuantitativas continuas, ya que entre dos porcentajes pueden haber infinitos valores (en el summary se observa que las variables no están redondeadas). Para este tipo de variables es útil ver el histograma para apreciar visualmente su distribución. Para ello es necesario fijar la cantidad de *bins* o intervalos en que se agruparán los valores, lo cual realizo utilizando Sturges.
 
+Se realiza el análisis univariado en forma separada para cada variable, y dentro de cada una se desagrega por año.
+
 ## 2.1 ) Internet_por_num
 
-Primero analizo la variable Internet_por_num. A continuación se muestra el histograma. Se usaron la misma cantidad de intervalos en ambos años para poder comparar mejor los cambios en la distribución.
+Primero analizo la variable Internet_por_num. A continuación se muestra el histograma por año, usándose la misma cantidad de intervalos en ambos para poder comparar mejor los cambios en la distribución.
 
 ```{r histograma variables}
 df %>%
-            ggplot(aes(Internet_por_num,fill= as.factor(anyo)))+
+            ggplot(aes(Internet_por_num, fill= as.factor(anyo)))+
+            #se hace el histograma fijando los bins a partir de Sturges
             geom_histogram(bins = nclass.Sturges(df$Internet_por_num))+
             xlab("% de población que usa Internet")+
             ylab("Frecuencia absoluta del intervalo")+
             facet_grid(~as.factor(anyo))+
             theme(legend.position = "None")+
-        geom_text(
-            aes(label =stat(count)), 
-                stat = 'bin', vjust = -0.5, bins=9
+            geom_text(
+                  aes(label = stat(count)), 
+                  stat = 'bin', 
+                  vjust = -0.5, 
+                  bins = nclass.Sturges(df$Internet_por_num)
             )+
-      scale_y_continuous(limits = c(0,25),breaks = seq(0,25, by =5))
+            scale_y_continuous(limits = c(0,25),breaks = seq(0,25, by =5))
             
 ```
-Se observa que en 2010 está variable parece más simétrica que en el 2018. En este último año hay una mayor concentración de países con más % de población que usa internet. Probablemente entre estos dos años puede haber aumentado la conectividad, instalaciones e infraestructura para el acceso, además de la extensión del uso de internet por medio del móvil. También podrían darse otras causas, como mejoras económicas en ciertos países. 
+Se observa que en 2010 está variable parece más simétrica que en el 2018. En este último año hay una mayor concentración de países con más porcentaje de población que usa internet. Probablemente entre estos dos años puede haber aumentado la conectividad, instalaciones e infraestructura para el acceso, además de la extensión del uso de internet por medio del móvil. También podrían darse otras causas, como mejoras económicas en ciertos países. 
 
-En el 2018 hay un intervalo modal claramente definido en uno de los tramos superiores. En el 2010, si bien hay un intervalo modal, los dos intervalos que lo siguen en frecuencias no presentan diferencias significativas en las mismas con respecto al intervalo modal. Eso sí, esos dos intervalos son de valores de la variable Internet_por más bajos, con lo que se ve que esta variable está más dispersa en el 2010 que en el 2018.
-
-Todas estas observaciones deben ser luego examinadas cuando se calculen las métricas.
+También se observa que en los dos primeros intervalos había 15 países en el 2010, y no hay ninguno en el 2018. Al analizar las métricas se observará que el mínimo aumentó considerablemente entre un año y otro. 
 
 
-```{r}
+Por otra parte, en el 2018 hay un intervalo modal claramente definido en uno de los tramos superiores, con diferencias significativas con los dos intervalos que le siguen en frecuencias absolutas. Al respecto se puede decir que el intervalo modal en ese año está formado por 23 países, y los dos intervalos que lo siguen tienen 14 países cada uno (una diferencia de 9), y además son intervalos adyacentes al modal y dentro de los tramos superiores de la variable, lo cual denota la concentración en dichos tramos. En el 2010, si bien hay un intervalo modal, los dos intervalos que le siguen en frecuencias absolutas no presentan diferencias significativas en las mismas con respecto al intervalo modal. Presentan diferencias de 2 y 4 países respectivamente, y además  esos dos intervalos corresponden a valores de la variable Internet_por_num más bajos que el intervalo modal y no son adyacentes, con lo que se ve que esta variable está más dispersa en el 2010 que en el 2018. 
+
+Todas estas observaciones deben ser luego confirmadas con el cálculo de las métricas, el cual se hace a continuación.
+
+
+```{r métricas}
 df %>% 
       group_by(anyo) %>% 
       summarise(
-            media=mean(Internet_por_num, na.rm = T),
+           media=mean(Internet_por_num, na.rm = T),
            sd=sd(Internet_por_num, na.rm = T),
            CV=sd(Internet_por_num, na.rm = T)/mean(Internet_por_num, na.rm = T),
            asimetria=skewness(Internet_por_num, na.rm = T),
@@ -139,7 +161,7 @@ df %>%
            maximo=max(Internet_por_num, na.rm = T)
        ) %>% 
       pivot_longer(
-            cols = -anyo,names_to = "metrica", values_to = "valor"
+            cols = -anyo, names_to = "metrica", values_to = "valor"
       ) %>% 
       pivot_wider(
                   names_from = anyo,
@@ -155,24 +177,26 @@ En el 2010, en promedio, el 48,2% de la población de los países seleccionados 
 
 La desviación típica fue de 27,2 puntos porcentuales en 2010 y de 20,5 en 2018.
 
-El coeficiente de variación fue de 56,5% en 2010, lo cual está por debajo del 80%, por lo tanto la media es representativa del conjunto de datos, el cuál puede decirse que es homogéneo. Este porcentaje es aún menor en el 2018, por lo que en este año hay menor dispersión con respecto a la media que en el 2010, y tienen una mayor concentración, lo cuál se puede ver en el gráfico anterior. 
+El coeficiente de variación fue de 56,5% en 2010, lo cual está por debajo del 80%, por lo tanto la media es representativa del conjunto de datos en ese año, y dicho conjunto puede decirse que es homogéneo. Este porcentaje es aún menor en el 2018, por lo que en este año hay menor dispersión con respecto a la media que en el 2010, lo cuál fue mencionado al analizar el gráfico anterior. 
 
-Si bien el coeficiente de asimetría es negativo en 2010 (-0,08), el mismo está muy cercano a 0, lo cuál implica que tiene cierta simetría. En el 2018 la distribución no presenta tanta simetría, y el coeficiente es menor (-0,81), lo que implica que hay una asimetría negativa, con lo cual hay una cola hacia la izquierda y hay más concentración a la derecha, que es lo que sucede en el gráfico anterior.
+Si bien el coeficiente de asimetría es negativo en 2010 (-0,08), el mismo está muy cercano a 0, lo cuál implica que tiene cierta simetría como ya fuera señalado. En el 2018 el coeficiente es menor (-0,81), lo que implica que hay una asimetría negativa, con lo cual hay una cola hacia la izquierda y hay más concentración a la derecha, que es lo que sucede en el gráfico anterior.
 
 Se observa que el apuntamiento o curtosis es positivo en ambos años, por lo que ambas distribuciones son leptocúrticas, con una mayor concentración en los valores centrales.
 
-El mínimo porcentaje de 2010 es bastante menor al del 2018, siendo 0,78% y 18,6% respectivamente. En el máximo también se produce un crecimiento aunque menor: es de 93,4% en 2010 y de 99,6% en 2018. Este mayor crecimiento en el mínimo podría deberse a que hubo una mejora en las tecnologías en los países con mayor atraso teconológico, que son los que tienen más margen para seguir mejorando, ya que los países más desarrollados económicamente tienen una cobertura de internet mayor y tienen poco margen para aumentarla. De todas maneras esto requeriría un análisis más profundo, como por ejemplo analizar si los incrementos en la cobertura logrados por mejoras tecnológicas son decrecientes. Entiendo que dicho análisis excede a la presente tarea.
+El mínimo porcentaje de 2010 es bastante menor al del 2018, siendo 0,75% y 18,6% respectivamente. En el máximo también se produce un crecimiento aunque menor: es de 93,4% en 2010 y de 99,6% en 2018. Este mayor crecimiento en el mínimo podría deberse a que hubo una mejora en las tecnologías en los países con mayor atraso teconológico, que son los que tienen más margen para seguir mejorando, ya que los países más desarrollados económicamente tienen una cobertura de internet mayor y tienen poco margen para aumentarla. De todas maneras esto requeriría un análisis más profundo, como por ejemplo analizar si los incrementos en la cobertura logrados por mejoras tecnológicas son decrecientes. Entiendo que dicho análisis excede a la presente tarea.
 
-Todos los cuartiles aumentan de 2010 a 2018. El primer cuartil aumenta más del doble, más específicamente tiene un crecimiento del 135,4%. La mediana crece un 75,3% y el tercer cuartil un 23,9%. Parecería que, como ya fuera mencionado, hay rendimientos marginales decrecientes. Es decir a mayor cobertura, la misma se puede seguir incrementando pero a ritmos menores.
+Todos los cuartiles aumentan de 2010 a 2018. El primer cuartil aumenta más del doble, más específicamente tiene un crecimiento del 135,4%. La mediana crece un 75,3% y el tercer cuartil un 23,9%. Parecería que, como ya fuera señalado, hay rendimientos marginales decrecientes. Es decir a mayor cobertura, la misma se puede seguir incrementando pero a ritmos menores.
 
-Cabe destacar que en ambos años la mediana no difiere tanto de la mediana. Los datos de los cuartiles se analizarán con mayor detalle cuando se examine el boxplot más adelante.
+Cabe destacar que en ambos años la mediana no difiere tanto de la media. 
+
+Los datos de los cuartiles se analizarán con mayor detalle cuando se examine el boxplot más adelante.
 
 
 ## 2.2) Facebook_por_num
 
-En el siguiente gráfico se expone un histograma por año de la variable Facebook_por_num, creando *bins* en nuevamente mediante Sturges.
+En el siguiente gráfico se expone un histograma por año de la variable Facebook_por_num, creando *bins* nuevamente mediante Sturges.
 
-```{r histograma variablee}
+```{r histograma variable Facebook_por_num}
 df %>%
             ggplot(aes(Facebook_por_num,fill= as.factor(anyo)))+
             geom_histogram(bins = nclass.Sturges(df$Facebook_por_num))+
@@ -180,24 +204,27 @@ df %>%
             ylab("Frecuencia absoluta del intervalo")+
             facet_grid(~as.factor(anyo))+
             theme(legend.position = "None")+
-        geom_text(
-            aes(label =stat(count)), 
-                stat = 'bin', vjust = -0.5, bins=9
+            geom_text(
+                  aes(label = stat(count)), 
+                  stat = 'bin', 
+                  vjust = -0.5,
+                  bins=nclass.Sturges(df$Facebook_por_num)
             )+
-      scale_y_continuous(limits = c(0,25),breaks = seq(0,25, by =5))
+            scale_y_continuous(limits = c(0,25),breaks = seq(0,25, by =5))
             
 ```
-En el caso del % de población que usa Facebook, se observa que en el 2010 hay una mayor concentración en los intervalos por debajo del 50%, siendo el intervalo modal el que contiene a los valores más bajos. En el 2018, en cambio, se empieza a dar una concentración en los valores medios y más altos de la variable Facebook_por_num. Esto quiere decir que aumentó el uso de esta red social en los países entre estos dos años. Esto podría tener cierta relación con la expansión de los usuarios de internet analizada anteriormente. De todas formas esto último será estudiado al realizar el análisis bivariado de estas dos variables.
+En el caso del % de población que usa Facebook, se observa que en el 2010 los países se concentran prácticamente todos los países en los intervalos por debajo del 50%, salvo Islandia que tiene 83,5% en ese año. En cambio en el 2018 más de la mitad de los países (43 de los 78 analizados) tienen una población donde la mitad o más usa Facebook. 
 
+Por lo tanto hay un cambio significativo entre estos dos años, incrementando el uso de esta red social en los países analizados. Esto podría tener cierta relación con la expansión de los usuarios de internet analizada anteriormente. De todas formas esto último será estudiado al realizar el análisis bivariado de estas dos variables.
 
-A continuación se exponen las medidas de centralización, dispersión, posición, concentración y forma.
+A continuación se exponen las medidas de centralización, dispersión, posición, concentración y forma para Facebook_por_num.
 
 
 ```{r métricas Facebook_por_num}
 df %>% 
       group_by(anyo) %>% 
       summarise(
-            media=mean(Facebook_por_num, na.rm = T),
+           media=mean(Facebook_por_num, na.rm = T),
            sd=sd(Facebook_por_num, na.rm = T),
            CV=sd(Facebook_por_num, na.rm = T)/mean(Facebook_por_num, na.rm = T),
            asimetria=skewness(Facebook_por_num, na.rm = T),
@@ -224,21 +251,23 @@ df %>%
 
 La media aritmética de la variable Facebook_por_num es del 19,3% en 2010 y de 48,9% en 2018. Se nota un cambio significativo en el promedio de población usuaria de esta red social. 
 
-La desviación estándar es de 16,7 puntos porcentuales en 2010 y de 21,1 en 2018. Si bien el desvío estándar aumenta, hay que tener en cuenta que la media también aumentó. Es más la media aumentó más de lo que aumentó la desviación estándar, por lo tanto para analizar mejor que pasó con la dispersión con respecto a la media es mejor examinar el coeficiente de variación. Al analizar este coeficiente se observa que el mismo desciende, pasa de ser 86,6% en 2010 a 43,2% en 2018. Es decir que en 2010 el conjunto de datos era heterogéneo, mientras que en 2018 es homogéneo y la media es representativa del conjunto de datos. Esto puede visualizarse en el gráfico, en donde los valores están concentrados principalmente en tres intervalos.
+La desviación estándar es de 16,7 puntos porcentuales en 2010 y de 21,1 en 2018. Si bien el desvío estándar aumenta, hay que tener en cuenta que la media también aumentó. Es más la media aumentó más de lo que aumentó la desviación estándar, por lo tanto para analizar mejor que pasó con la dispersión con respecto a la media es mejor examinar el coeficiente de variación. Al analizar este coeficiente se observa que el mismo desciende, pasa de ser 86,6% en 2010 a 43,2% en 2018. Es decir que en 2010 el conjunto de datos era heterogéneo, mientras que en 2018 es homogéneo y la media es representativa del conjunto de datos. Esto puede visualizarse en el gráfico, en donde los valores están concentrados principalmente en tres intervalos en el 2018.
 
-La asimetría cambia completamente de un año a otro. En el 2010 la asimetría es positiva, observándose una mayor concentración de valores a la izquierda de la distribución, y en el 2018 es negativa, con mayor concentración al lado derecho y con cola a la izquierda.
+La asimetría cambia completamente de un año a otro. En el 2010 la asimetría es positiva, observándose una mayor concentración de valores a la izquierda de la distribución, y en el 2018 es negativa, con mayor concentración al lado derecho y con cola a la izquierda. Esto es coherente con el cambio mencionado en el gráfico, donde en el 2010 estaban prácticamente todos los países por debajo del 50% de población usuaria de esta red social, y en el 2018 la mayoría tenía más del 50%.
+
+Cabe destacar que en ambos años la distribución es leptocúrtica, ya que la curtosis es superior a 0.
 
 En el caso de Facebook, hay mínimos significativamente más bajos que en el caso de el porcentaje de usuarios de internet. Puede suceder que no sea tan lineal la expansión en el uso de internet con el crecimiento de usuarios de Facebook, pero eso se examinará al hacer el análisis bivariado. El porcentaje máximo es de 83,4% para el 2010, y de 90,3% para el 2018.
 
-En el 2010, el 50% de los países analizados tenían menos del 17,2% de la población usando Facebook. En el 2018 en el 50% de los países había más del 53,3% de la población usando esta red social.
+En el 2010, el 50% de los países analizados tenían menos del 17,2% de la población usando Facebook. En el 2018 en el 50% de los países había más del 53,3% de la población usando esta red social, tal como se observó al analizar el gráfico.
 
-Los otros dos cuartiles también incrementaron entre los dos años en estudio. El primer cuartil pasó del 3,3% a 42,2%. Rl tercer cuartil era 29% en 2010 y creció a 63,3% en 2018.
+Los otros dos cuartiles también incrementaron entre los dos años en estudio. El primer cuartil pasó del 3,3% a 42,2%, y el tercer cuartil era 29% en 2010 y creció a 63,4% en 2018.
 
 Claramente entre un año y otro aumentó la proporción de personas que acceden a esta red social.
 
 
 
-# 3) Haz un gráfico para cada variable (Facebook_por_num y Internet_por_num) donde se pueda visualizar la variación entre 2010 y 2018 del valor medio (o el estadístico que prefieras). Explica qué observas en el gráfico.
+# 3) Haz un gráfico para cada variable (Facebook_por_num e Internet_por_num) donde se pueda visualizar la variación entre 2010 y 2018 del valor medio (o el estadístico que prefieras). Explica qué observas en el gráfico.
 
 La variación del estadístico que me interesa son los cuartiles (el primero, el segundo o mediana y el tercero). Para analizar esta variación realizaré un boxplot de ambos años para cada variable.
 
@@ -258,7 +287,7 @@ df %>%
 
 ```
 
-Tal como fuera dicho en el análisis univariante, todos los cuartiles aumentan entre 2010 y 2018. La mediana pasó de ser 45% a 78,9%. Además se observa que la caja disminuye en 2018, lo que implica que hay una mayor concentración de los porcentajes en este año.También puede visualizarse que la distribución está más concentrada a la derecha en 2018, y que en el 2010 hay una mayor simetría. Esto ya fue mencionado en el análisis de las métricas de esta variable.
+Tal como fuera dicho en el análisis univariante, todos los cuartiles aumentan entre 2010 y 2018. La mediana pasó de ser 45% a 78,9%. Además se observa que la caja disminuye en 2018, lo que implica que hay una mayor concentración de los porcentajes en este año. También puede visualizarse que la distribución está más concentrada a la derecha en 2018, y que en el 2010 hay una mayor simetría. Esto ya fue mencionado en el análisis de las métricas de esta variable.
 
 Cabe destacar que en ninguno de los dos años se observan outliers, ya que no hay puntos ni a la izquierda ni a la derecha de los bigotes.
 
@@ -281,37 +310,96 @@ En este caso también se produce entre 2010 y 2018 un incremento de los tres cua
 
 Por otra parte se observa que en el 2010 hay una concentración de los valores a la izquierda de la distribución, mientras que en el 2018 ocurre lo contrario. Esto ya se vió al analizar el coeficiente de asimetría.
 
-Por último, se puede mencionar que en ambos años se observan outliers. En 2010 había uno solo y estaba por encima del tercer cuartil más 1,5 veces el rango intercuartílico (IQR). en el 2018 hay más outliers, pero a diferencia del 2010 estos están por debajo del primer cuartil menos 1,5 veces el IQR.
+Por último, se puede mencionar que en ambos años se observan outliers. En 2010 había uno solo y estaba por encima del tercer cuartil más 1,5 veces el rango intercuartílico (IQR). en el 2018 hay más outliers, pero a diferencia del 2010 estos están por debajo del primer cuartil menos 1,5 veces el IQR, notándose entonces lo raro que es en ese año que los países tengan pocos usuarios de Facebook, lo cual era más habitual en 2010.
 
 
-##4) Haz un análisis bivariante entre Facebook_por_num sobre Internet_por_num:
-      * Gráfico de dispersión separando el año de observación en colores distintos.
-      * Introduce, en el gráfico de dispersión, una recta de regresión (una por año).
-      * Comenta si crees que la relación observada es lineal.
+# 4) Haz un análisis bivariante entre Facebook_por_num sobre Internet_por_num:
+
+* Gráfico de dispersión separando el año de observación en colores distintos.
+* Introduce, en el gráfico de dispersión, una recta de regresión (una por año).
+* Comenta si crees que la relación observada es lineal.
 
 En el gráfico se pone como variable dependiente (y) a Facebook_por_num y como independiente (x) a Internet_por_num. Esto se hace así en virtud de que, a priori, parecería razonable analizar la hipótesis de que a mayor cantidad de usuarios de internet en un país, es más probable que haya más usuarios de Facebook. De todas maneras hay que estudiarlo, ya que puede suceder que no sea tan lineal, puede pasar que haya países en que esta red social no sea popular pero se use mucho internet, y además puede ocurrir que en los países desarrollados no haya mucho crecimiento de los usuarios de internet, pero sin embargo se expanda el uso de Facebook. Este último aspecto se vió en el análisis univariado.
 
-Viendo el gráfico de dispersión, y por medio de un análisis de regresión se puede analizar esta relación. A continuación se expone dicho gráfico conjuntamente con una línea de regresión para cada año, y también se analiza una recta de regresión local (LOESS) para ver cuánto se aleja.
+Viendo el gráfico de dispersión, y por medio de un análisis de regresión se puede analizar esta relación. A continuación se expone dicho gráfico conjuntamente con una línea de regresión para cada año.
 
-```{r gráfico de dispersión y recta de regresión}
+```{r gráfico de dispersión y recta de regresión, warning=FALSE, message = FALSE}
 
 graf_disp_1 <- df %>% 
-      ggplot(aes(x=Internet_por_num, y=Facebook_por_num,group= as.factor(anyo), color=as.factor(anyo)))+
+      ggplot(aes(x=Internet_por_num, y=Facebook_por_num,
+                 group= as.factor(anyo), 
+                 color=as.factor(anyo)))+
       geom_point()+
       geom_smooth(method='lm', se=FALSE)+
-      guides(col=guide_legend("Año"))+
-      xlab("% de población usuaria de internet")+
+      guides(col= guide_legend("Año"))+
+      xlab("% de población usuaria de Internet")+
       ylab("% de población usuaria de Facebook")
 
 graf_disp_1
 
 ```
 
-Analizando el gráfico se observa en general que a mayor porcentaje de usuarios de internet, mayor cantidad de usuarios de Facebook, pero también se puede apreciar que a medida que aumenta el porcentaje de poblción con internet, la distancia con respecto a la recta de regresión lineal parecería ser mayor. Podría existir heterocedasticidad, es decir que los errores no son constantes en las observaciones analizadas. Esto debería ser examinado en profundidad, pero entiendo que excede el análisis de la presente tarea.
+Analizando el gráfico se observa en general que a mayor porcentaje de usuarios de internet, mayor cantidad de usuarios de Facebook, pero también se puede apreciar que a medida que aumenta el porcentaje de población con internet, la distancia con respecto a la recta de regresión lineal parecería ser mayor. Esto se analiza a continuación, graficando los residuos contra la variable Internet_por_num.
 
-Una forma de examinar si la relación es o no lineal es comparando la regresión lineal antes expuesta con una regresión local (LOESS), lo cual se hace a continuación, diferenciando por año.
 
-```{r lm y loess}
+```{r análisis residuos regresión, fig.width=7}
+
+#Elaboro modelos de regresión lineal simple para cada año
+
+#regresión lineal simple sin transformaciones - 2010
+lm_2010 <- lm(Facebook_por_num ~ Internet_por_num, 
+              data = df %>%
+                           filter(anyo==2010)
+                    )
+#regresión lineal simple sin transformaciones - 2018    
+lm_2018 <- lm(Facebook_por_num ~ Internet_por_num, 
+              data = df %>%
+                           filter(anyo==2018)
+                    )
+
+#Hago gráficos de dispersión de % de población con internet contra 
+#residuos de la regresión
+graf_resid_1 <- df %>% 
+                  filter(anyo==2010, !is.na(Internet_por_num)) %>% 
+                  ggplot(aes(x = Internet_por_num,
+                             y=lm_2010$residuals)
+                         
+                         ) +
+                  geom_point(color="#F8766D") + 
+                  geom_abline(slope = 0)+
+                  xlab("% de población usuaria de Internet")+
+                  ylab("residuos de la regresión")+
+                  ggtitle("% de población usuaria de internet \n contra residuos - Año 2010")+
+                    scale_x_continuous(limits = c(0,100), 
+                                     breaks = seq(0,100, by = 25))+
+                  scale_y_continuous(limits = c(-50,50))
+
+graf_resid_2 <-  df %>% 
+                  filter(anyo==2018) %>% 
+                  ggplot(aes(x = Internet_por_num,
+                             y=lm_2018$residual)
+                          
+                         ) +
+                  geom_point(color = "#00BFC4") + 
+                  geom_abline(slope = 0)+
+                  xlab("% de población usuaria de Internet")+
+                  ylab("residuos de la regresión")+
+                  ggtitle("% de población usuaria de internet \n contra residuos - Año 2018")+
+                  scale_x_continuous(limits = c(0,100), 
+                                     breaks = seq(0,100, by = 25))+
+                  scale_y_continuous(limits = c(-50,50))
+                  
+
+
+plot_grid(graf_resid_1, graf_resid_2)
+
+```
+
+En ambos años los residuos están alejados de 0. En el 2010 se observa claramente que a mayor porcentaje de población usuaria de internet los residuos son mayores (en valores absolutos). En el 2018 esto no se ve claramente.Podría existir heterocedasticidad, es decir que los errores no son constantes en las observaciones analizadas. Esto debería ser examinado en mayor profundidad, pero entiendo que excede el análisis de la presente tarea.
+
+Resta ver si la relación es o no lineal, lo cual puede analizarse comparando la regresión lineal antes expuesta con una regresión local (LOESS), tal como se hace a continuación.
+
+```{r lm y loess, warning=FALSE, message = FALSE}
 graf_disp_2 <- df %>% 
                   ggplot(aes(x=Internet_por_num, y=Facebook_por_num))+
                   geom_point()+
@@ -320,16 +408,18 @@ graf_disp_2 <- df %>%
                   guides(col=guide_legend("Modelo"))+
                   xlab("% de población usuaria de internet")+
                   ylab("% de población \n  usuaria de Facebook")+
-                  facet_grid(~anyo)
+                  facet_grid(~anyo)+
+                  scale_y_continuous(limits = c(0,100), 
+                                     breaks = seq(0,100, by = 25))
 
 
 graf_disp_2 
 
 
 ```
-Se observa que en el año 2010 la recta de regresión local no se aleja tanto de la lineal, en el 2018 se aleja un poco más pero no parecería ser tan significativo. La relación a priori parece lineal, el problema es el comentado anteriormente que los residuos parecerían crecer a medida que aumenta el porcentaje de población con internet. 
+Se observa que en el año 2010 la recta de regresión local no se aleja tanto de la lineal, en el 2018 se aleja un poco más pero no parecería ser tan significativo. La relación a priori parece lineal, el problema es el comentado anteriormente que los residuos parecerían crecer a medida que aumenta el porcentaje de población con internet, así como el tamaño de los errores. En el apartado 6 se sigue examinando este punto, comparando los coeficientes de determinación y el error típico de los residuos para las regresiones de cada año.
 
-## 5) Propón alguna transformación sobre las variables del análisis y argumenta cuál es la mejor.
+# 5) Propón alguna transformación sobre las variables del análisis y argumenta cuál es la mejor.
 
 Se realizan dos transformaciones: por un lado se hace solo el logaritmo de la variable Facebook_por_num, y por otro lado se hace la raíz cuadrada de ambas variables. Al ser las dos variables estrictamente positivas, es posible realizar dichas transformaciones.
 
@@ -347,7 +437,7 @@ df <- df %>%
 Ahora realizo el gráfico de dispersión por año con modelos lm y LOESS para cada una de estas dos transformaciones, a efectos de compararlos con el gráfico visto con las variables antes de transformarlas.
 
 
-```{r lm y loess en log de variables}
+```{r lm y loess en log de variables, message = FALSE}
 graf_disp_2 <- graf_disp_2 +
                         ggtitle("Sin transformación de variables")
 
@@ -387,10 +477,11 @@ A continuación comparo el gráfico hecho anteriormente con cada una de las tran
 ## 5.1) Logaritmo de Facebook_por_num
 
 
-```{r gráfico comparación con logaritmo, fig.width = 7 , fig.height = 4}
+```{r gráfico comparación con logaritmo, fig.width = 7 , fig.height = 4, warning=FALSE, message=FALSE}
 plot_grid( graf_disp_2,graf_disp_3, ncol = 1)
 ```
-Se observa que en el caso del año 2010, con la transformación logarítimica mencionada, no parece haber mejorado demasiado. La dispersión de los puntos con respecto a la recta de regresión no presenta cambios significativos, y además la regresión local se aparta más de la línea que en el caso del mdelo LOESS sobra las variables sin transformar.
+
+Se observa que en el caso del año 2010, con la transformación logarítimica mencionada, no parece haber mejorado demasiado. La dispersión de los puntos con respecto a la recta de regresión no presenta cambios significativos, y además la regresión local se aparta más de la línea que en el caso del modelo LOESS sobre las variables sin transformar.
 
 En el año 2018 con la transformación parece haber disminuido la dispersión de los puntos con respecto a la recta de regresión. La recta de LOESS, de todas formas, no parece haber sufrido una gran modificación.
 
@@ -398,29 +489,18 @@ De cualquier manera, en el siguiente ejercicio se analizarán los coeficientes d
 
 ## 5.2) Raíces de ambas variables
 
-```{r gráfico comparación con raíces, fig.width = 7 , fig.height = 4}
+```{r gráfico comparación con raíces, fig.width = 7 , fig.height = 4, warning=FALSE,, message=FALSE}
 plot_grid( graf_disp_2,graf_disp_4, ncol = 1 )
 ```
-Se observa que en el año 2010 la situación es muy similar a lo que sucedía con la transformación logarítimica expuesta. en el 2018, en cambio, parece disminuir la dispersión de los valores más elevados de la población usuaria de internet, aunque no tanto como en el caso del logaritmo. La regresión local en ciertos tramos se aparta dmás de la recta de regresión lineal que en el caso de las variables sin transformación.
+Se observa que en el año 2010 la situación es muy similar a lo que sucedía con la transformación logarítimica expuesta. en el 2018, en cambio, parece disminuir la dispersión de los valores más elevados de la población usuaria de internet, aunque no tanto como en el caso del logaritmo. La regresión local en ciertos tramos del 2018 se aparta más de la recta de regresión lineal que en el caso de las variables sin transformación.
 
-Del análisis de las transformaciones, pareceria que las mismas no mejoran lo que sucede con la regresión lineal de las variables sin transformar. De cualquier manera, esto se analizará con mayor detalle en el ejercicio siguiente.
+Del análisis de las transformaciones, parecería que las mismas no mejoran lo que sucede con la regresión lineal de las variables sin transformar. Por lo tanto no tendría mucho sentido hacerlo. De cualquier manera, esto se analizará con mayor detalle en el ejercicio siguiente.
 
-## 6) Compara, mediante stargazer, los coeficientes de la recta de regresión de Facebook_por_num sobre Internet_por_num en 2010 y 2018. Interpreta el significado de los coeficientes de la regresión en cada año.
+# 6) Compara, mediante stargazer, los coeficientes de la recta de regresión de Facebook_por_num sobre Internet_por_num en 2010 y 2018. Interpreta el significado de los coeficientes de la regresión en cada año.
 
-Realizo entonces un modelo de regresión lineal por año. Primero analizo los coeficientes de la regresión sin las transformaciones vistas anteriormente.
+A continuación se comparan los modelos por año ya calculados en el ejercicio 4. Primero analizo los coeficientes de la regresión sin las transformaciones vistas anteriormente.
 
-```{r modelos de regresión por año}
-
-#regresión lineal simple sin transformaciones - 2010
-lm_2010 <- lm(Facebook_por_num ~ Internet_por_num, 
-              data = df %>%
-                           filter(anyo==2010)
-                    )
-#regresión lineal simple sin transformaciones - 2018    
-lm_2018 <- lm(Facebook_por_num ~ Internet_por_num, 
-              data = df %>%
-                           filter(anyo==2018)
-                    )
+```{r  comparo modelos de regresión por año}
 
 #Comparo los modelos de cada año   
 stargazer(lm_2010, lm_2018,
@@ -430,12 +510,14 @@ stargazer(lm_2010, lm_2018,
                     "Sin transf. 2018"))
       
 ```
-Se observa que en ambos años la variable dependiente es estadísticamente significativa con un nivel de significación del 1%. 
-El beta uno en 2010 es de 0,439, lo que implica que, en promedio, un aumento (descenso) de 1 punto porcentual en la población con internet, se incrementaría (reduciría) en 0,439 puntos porcentuales el porcentaje de usuarios de Facebook. En el año 2018 este beta es mayor (0,72), por lo que que, en promedio, un incremento del porcentaje de usuarios de internet en dicho año, se correspondería con un mayor aumento de los usuarios de Facebook que en el año 2010.
+Se observa que en ambos años la variable independiente es estadísticamente significativa con un nivel de significación del 1%. 
+El beta uno en 2010 es de 0,44, lo que implica que, en promedio, con un aumento (descenso) de 1 punto porcentual en la población con internet, se incrementaría (reduciría) en 0,44 puntos porcentuales el porcentaje de usuarios de Facebook. En el año 2018 este beta es mayor (0,72) por lo que, en promedio, un incremento del porcentaje de usuarios de internet en dicho año, se correspondería con un mayor aumento de los usuarios de Facebook que en el año 2010.
 
 Al analizarse el coeficiente de determinación (R cuadrado), la variable Internet_por_num explica un 50,8% de la varianza del porcentaje de usuarios de Facebook en la población. Este coeficiente desciende levemente en 2018 a 48,9%, por lo que en este último año el modelo explica menor porcentaje de la variabilidad de la variable dependiente. De todas maneras no es una diferencia tan significativa.
 
 Además, el error típico de los residuos es mayor en el 2018 (15,2) que en el caso de 2010 (11,8), por lo tanto en 2018 el ajuste de la recta es peor que en el 2010. Esto se había observado en parte en el análisis gráfico, donde se había constatado que la regresión local se apartaba más de la recta de regresión lineal en el 2018 que en el 2010.
+
+El R cuadrado bajo puede estar determinando que la relación no sea tan lineal, o que estén faltando variables a la regresión. 
 
 A continuación se comparan brevemente los coeficientes de los modelos con transformación para cada año. 
 
@@ -455,14 +537,14 @@ lm_log_2018 <- lm(log_Facebook ~ Internet_por_num,
 
 #regresión lineal simple con raíces ambas variables - 2010
 lm_raiz_2010 <- lm(raiz_Facebook ~ raiz_Internet, 
-              data = df %>%
+                    data = df %>%
                            filter(anyo==2010)
                     )
 
       
 #regresión lineal simple con raíces ambas variables - 2018
 lm_raiz_2018 <- lm(raiz_Facebook ~ raiz_Internet, 
-              data = df %>%
+                  data = df %>%
                            filter(anyo==2018)
                     )
 
@@ -485,13 +567,12 @@ stargazer(lm_2010, lm_log_2010,lm_raiz_2010,
 ```
 
 Se observa que el coeficiente de determinación empeora con la transformación logarítimica (pasa de 50,8% sin transformación a 46%), pero sin embargo mejora levemente con la raíz, ascendiendo a un 57,3%. De todas maneras no es una mejora significativa.
-Por otra parte el error típico de los residuos disminuye con las dos transformaciones, siendo menor en la transformación logarítmica de la variable Facebook_por_num.
 
 Resta entonces analizar que sucede en el 2018.
 
 ```{r comparación modelos 2018}
 
-#Comparo los modelos de 2010
+#Comparo los modelos de 2018
 stargazer(lm_2018, lm_log_2018,lm_raiz_2018,
           type="text",
           column.labels =
@@ -508,4 +589,4 @@ Con la comparación de modelos vista en este ejercicio, se confirma lo visto en 
 
 # 7) A partir de los datos del punto anterior, comenta de qué forma beneficia a Facebook el hecho que, en 2018, el coeficiente de Internet_por_num sea muy superior al observado en el año 2010.
 
-Ya se vió en el  punto anterior que el beta uno, que es la pendiente de la recta, es mayor en el 2018 ( 0,72) que en el 2010 (0.44). Esto beneficia a Facebook ya que, como fuera mencionado, el incremento de un punto porcentual en el porcentaje de usuarios de internet implicaría que, en promedio, aumentaría 0,72 puntos el porcentaje de usuarios de Facebook. En 2010 dicho incremento era menor. Por lo tanto en el 2018 tendría un mayor crecimiento si crece la penetración del uso de internet en los diferentes países.  
+Ya se vió en el  punto anterior que el beta uno, que es la pendiente de la recta, es mayor en el 2018 (0,72) que en el 2010 (0,44). Esto beneficia a Facebook ya que, como fuera mencionado, el incremento de un punto porcentual en el porcentaje de usuarios de internet implicaría que, en promedio, aumentaría 0,72 puntos el porcentaje de usuarios de Facebook. En 2010 dicho incremento era menor. Por lo tanto en el 2018 era esperable que tuviera un mayor crecimiento si aumentaba la penetración del uso de internet en los diferentes países.  
